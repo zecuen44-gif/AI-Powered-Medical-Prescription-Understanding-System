@@ -1,273 +1,245 @@
-# Medical Prescription OCR 🏥
+# Intelligent Medical Prescription Understanding and Validation System using DONUT Transformer OCR
 
-A transformer-based Optical Character Recognition (OCR) system for handwritten medical prescriptions, built on **NAVER Clova Donut** and enhanced with zero-shot document classification.
+## Overview
 
-<div align="center">
+This project is an AI-powered system for understanding handwritten medical prescriptions. It uses a pre-trained DONUT (Document Understanding Transformer) OCR model to extract text from prescription images and applies medicine validation using RapidFuzz-based fuzzy matching.
 
-[![Model on HF](https://huggingface.co/datasets/huggingface/badges/resolve/main/model-on-hf-md.svg)](https://huggingface.co/chinmays18/medical-prescription-ocr)
-[![Dataset on HF](https://huggingface.co/datasets/huggingface/badges/resolve/main/dataset-on-hf-md.svg)](https://huggingface.co/datasets/chinmays18/medical-prescription-dataset)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
-
-</div>
+The system converts handwritten prescriptions into structured, machine-readable information by identifying medicines, extracting dosages, detecting prescription frequencies, and validating medicine names against a medicine database.
 
 ---
 
-## 📋 Table of Contents
-1. [Overview](#-overview)
-2. [Features](#-features)
-3. [Performance](#-performance)
-4. [Quick Start](#-quick-start)
-5. [Model Usage](#-model-usage)
-6. [Dataset](#-dataset)
-7. [Training](#-training)
-8. [Tech Stack](#️-tech-stack)
-9. [Project Structure](#-project-structure)
-10. [Contributing](#-contributing)
-11. [License](#-license)
-12. [Acknowledgments](#-acknowledgments)
+## Problem Statement
+
+Doctors' handwritten prescriptions are often difficult to interpret due to:
+
+- Illegible handwriting
+- Abbreviated medicine names
+- OCR spelling errors
+- Manual interpretation errors
+
+This project aims to automate prescription understanding and improve medicine recognition using AI and fuzzy matching techniques.
 
 ---
 
-## 🚀 Overview
+## Objectives
 
-**Medical Prescription OCR** (formerly **RxReader**) converts doctors' handwritten prescriptions into structured, machine-readable text with high accuracy.
-
-### Key Capabilities
-- **Accurate OCR** – Transcribes drug names, dosages, frequencies and instructions  
-- **Structured Output** – Returns clean JSON with parsed prescription elements  
-- **Zero-shot Classification** – Detects prescription documents vs. other medical forms  
-- **Robust Performance** – Handles diverse handwriting styles and image qualities  
-
----
-
-## ✨ Features
-
-| Feature | Description |
-|---------|-------------|
-| 🤖 **Pre-trained Model** | Ready to use on the [HF Model Hub](https://huggingface.co/chinmays18/medical-prescription-ocr) |
-| 📊 **Comprehensive Dataset** | 1,000 synthetic, fully annotated images on [HF Datasets](https://huggingface.co/datasets/chinmays18/medical-prescription-dataset) |
-| 🖥️ **User-Friendly Interface** | Gradio web app for drag-and-drop testing |
-| 🔄 **Gradual Augmentation** | Curriculum strategy for robust learning |
-| 📈 **Production Ready** | Download script and deployment guide included |
+- Extract handwritten prescription text using DONUT OCR
+- Identify medicine names from extracted text
+- Correct OCR spelling errors using RapidFuzz
+- Extract dosage information
+- Detect medicine frequency information
+- Generate structured prescription analysis
 
 ---
 
-## 📊 Performance
+## System Architecture
 
-| Metric | Score | Notes |
-|--------|-------|-------|
-| **Character-level accuracy** | **71%** | Individual character recognition |
-| **Word-level accuracy** | **84%** | Complete word recognition |
-| **Processing speed** | **≈2s/img** | CPU – Apple M1 |
-
-*Benchmarked on 100 held-out prescriptions with varied handwriting.*
-
----
-
-## ⚡ Quick Start
-
-### Prerequisites
-* Python ≥ 3.8  
-* ~2 GB free disk space for model files  
-* *(Optional)* CUDA GPU for faster inference  
-
-### Installation
-
-```bash
-# 1 – Clone the repo
-git clone https://github.com/JonSnow1807/medical-prescription-ocr.git
-cd medical-prescription-ocr
-
-# 2 – Install dependencies
-pip install -r requirements.txt
-
-# 3 – Download the pre-trained model (~800 MB)
-python model_download.py
-
-# 4 – Launch the Gradio app
-python app.py
-
-```
-
-The app will be available at **http://localhost:7860**.
+Prescription Image
+↓
+DONUT Transformer OCR
+↓
+Text Extraction
+↓
+RapidFuzz Medicine Validation
+↓
+Medicine Database Matching
+↓
+Dosage Extraction
+↓
+Frequency Detection
+↓
+Structured Prescription Analysis
 
 ---
 
-## 🤖 Model Usage
+## Features
 
-### Basic OCR
+### OCR-Based Prescription Understanding
 
-```python
-from transformers import DonutProcessor, VisionEncoderDecoderModel
-from PIL import Image
-import torch
+- Handwritten prescription recognition
+- Printed prescription recognition
+- Transformer-based document understanding
 
-# Load model & processor
-processor = DonutProcessor.from_pretrained("chinmays18/medical-prescription-ocr")
-model = VisionEncoderDecoderModel.from_pretrained("chinmays18/medical-prescription-ocr")
+### Medicine Validation
 
-device = "cuda" if torch.cuda.is_available() else "cpu"
-model.to(device)
+- RapidFuzz fuzzy matching
+- OCR error correction
+- Medicine database lookup
 
-# Load an image
-image = Image.open("prescription.jpg").convert("RGB")
-pixel_values = processor(images=image, return_tensors="pt").pixel_values.to(device)
+Examples:
 
-# Generate text
-task_prompt = "<s_ocr>"
-decoder_input_ids = processor.tokenizer(task_prompt, return_tensors="pt").input_ids.to(device)
+Azituro → Azithro
 
-generated_ids = model.generate(
-    pixel_values,
-    decoder_input_ids=decoder_input_ids,
-    max_length=512,
-    num_beams=1,
-    early_stopping=True,
-)
+Certifizine → Cetirizine
 
-# Decode
-text = processor.batch_decode(generated_ids, skip_special_tokens=True)[0]
-print(text)
+Montelukast → Montelukast
 
-```
+### Dosage Extraction
 
-### Advanced – with zero-shot verification
-`app.py` demonstrates automatic **zero-shot classification** (BART-based) to verify an image is a prescription before running OCR.
+Detects:
 
----
+- 500mg
+- 650mg
+- 10mg
+- 5ml
+- 250mg
 
-## 📚 Dataset
+### Frequency Detection
 
-| Split | Samples |
-|-------|---------|
-| Train | 800 |
-| Val   | 100 |
-| Test  | 100 |
+Recognizes:
 
-*1,000 synthetic PNG images + JSON annotations.*
+- OD (Once Daily)
+- BD (Twice Daily)
+- TDS (Three Times Daily)
+- HS (At Bedtime)
+- SOS (When Required)
 
-Access the complete dataset on Hugging Face: **[chinmays18/medical-prescription-dataset](https://huggingface.co/datasets/chinmays18/medical-prescription-dataset)**
+### Structured Analysis
+
+Generates:
+
+- Extracted text
+- Detected medicines
+- Dosages
+- Frequencies
+- Classification confidence
 
 ---
 
-## 🛠️ Training
+## Technologies Used
 
-The full training workflow is documented in `OCR_training.ipynb`.
+### Artificial Intelligence
 
-| Aspect | Details |
-|--------|---------|
-| **Base model** | NAVER Clova Donut |
-| **Framework** | PyTorch Lightning |
-| **Optimizer** | AdamW with linear warm-up |
-| **Strategy** | Gradual augmentation curriculum |
-| **Hardware** | NVIDIA GPU (mixed precision) |
+- DONUT Transformer OCR
+- Hugging Face Transformers
+- PyTorch
 
-### Key Innovations
-* **Gradual Augmentation** – Starts with light distortions and progressively increases difficulty
-* **Smart Callbacks** – Early stopping, checkpointing, and custom schedulers
-* **Memory Efficiency** – Gradient checkpointing & automatic mixed precision
+### Natural Language Processing
 
----
+- RapidFuzz
+- Zero-Shot Classification (BART Large MNLI)
 
-## 🏗️ Tech Stack
+### Backend
 
-| Component | Technology | Purpose |
-|-----------|------------|---------|
-| Core Framework | **PyTorch 2** | Deep-learning foundation |
-| Training | **PyTorch Lightning** | Clean, reproducible loops & logging |
-| Model Arch. | **Donut** (NAVER) | Document-level OCR |
-| Tokenization | **SentencePiece** | Sub-word encoding |
-| Augmentation | **Albumentations** | Fast, flexible image transforms |
-| Classification | **BART** (Meta AI) | Zero-shot document-type detection |
-| Interface | **Gradio** | Web demo |
-| Hosting | **Hugging Face Hub** | Model & dataset distribution |
+- Python
+
+### Interface
+
+- Gradio
+
+### Data Processing
+
+- Pandas
+- Regular Expressions
 
 ---
 
-## 📁 Project Structure
+## Medicine Database
 
-```text
-medical-prescription-ocr/
-├── app.py               # Gradio web application
-├── model_download.py    # HF model downloader
-├── OCR_training.ipynb   # End-to-end training notebook
-├── requirements.txt     # Python dependencies
-├── LICENSE              # MIT license
-├── README.md            # This file
-└── model/               # Populated after download
-    ├── config.json
-    ├── model.safetensors
-    ├── tokenizer.json
-    └── …
+The system uses a medicine knowledge base containing:
 
-```
+- Antibiotics
+- Anti-allergy medicines
+- Pain relievers
+- Blood pressure medicines
+- Diabetes medicines
+- Acidity medicines
+- Vitamin supplements
 
-## 🤝 Contributing
+Examples:
 
-We welcome contributions!
-
-1. **Report a bug** – Open an issue with clear reproduction steps.
-2. **Suggest a feature** – Start a discussion describing the use-case.
-3. **Submit a PR** – Fork, create a feature branch, commit, and open a pull request.
-
-```bash
-# Fork & clone
-git clone https://github.com/YOUR_USERNAME/medical-prescription-ocr.git
-cd medical-prescription-ocr
-
-# Create & activate a virtual environment
-python -m venv venv
-source venv/bin/activate      # On Windows: venv\Scripts\activate
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Dev tools
-pip install black pytest jupyter
-
-```
-
-Before committing, run `black .` for formatting and ensure all tests pass with `pytest`.
+- Paracetamol
+- Cetirizine
+- Levocetirizine
+- Azithromycin
+- Amoxicillin
+- Cefixime
+- Pantoprazole
+- Metformin
+- Telmisartan
+- Amlodipine
 
 ---
 
-## ⚠️ Important Notes
+## Project Workflow
 
-* **Research use only** – The model is **not** validated for clinical workflows.
-* **Synthetic data** – Trained entirely on generated prescriptions, *not* real patient data.
-* **No medical advice** – Do **not** use this model to process real prescriptions.
-* **Privacy** – Never upload confidential patient prescriptions to the public demo.
-
----
-
-## 📄 License
-
-Released under the **MIT License**.  
-See the full text in the [`LICENSE`](LICENSE) file.
+1. User uploads prescription image.
+2. DONUT OCR extracts prescription text.
+3. Text is classified as medical prescription or non-prescription.
+4. Medicine names are identified using RapidFuzz.
+5. Dosages are extracted using pattern matching.
+6. Frequencies are detected.
+7. Structured analysis is displayed.
 
 ---
 
-## 🙏 Acknowledgments
+## Sample Output
 
-* **[NAVER Clova AI](https://github.com/clovaai/donut)** – Donut architecture
-* **[Hugging Face](https://huggingface.co/)** – Model & dataset hosting
-* **[Meta AI](https://github.com/facebookresearch/fairseq)** – BART zero-shot classifier
-* **[IAM Handwriting DB](http://www.fki.inf.unibe.ch/databases/iam-handwriting-database)** – Inspiration for annotation schema
+Extracted Text:
+
+Paracetamol 500mg BD
+
+Cetirizine 10mg OD
+
+Medicine Analysis:
+
+Medicine:
+
+- Paracetamol
+- Cetirizine
+
+Dosage:
+
+- 500mg
+- 10mg
+
+Frequency:
+
+- Twice Daily
+- Once Daily
+
+Classification:
+
+- Medical Prescription
+
+Confidence:
+
+- 0.95
 
 ---
 
-## 👤 Author
+## Current Limitations
 
-**Chinmay Shrivastava**  
-M.S. Computer Science & Engineering  
-AI/ML Engineer passionate about healthcare applications
+- OCR performance depends on handwriting quality.
+- Very poor handwriting may reduce recognition accuracy.
+- Medicine database currently contains common medicines only.
+- Dosage and frequency extraction are rule-based.
 
-* GitHub — [@JonSnow1807](https://github.com/JonSnow1807)
-* Hugging Face — [@chinmays18](https://huggingface.co/chinmays18)
+---
 
-<div align="center">
+## Future Enhancements
 
-⭐&nbsp;&nbsp;If you find this project helpful, please consider giving it a **star**!&nbsp;&nbsp;⭐
+- Larger medicine database
+- Streamlit dashboard
+- FastAPI backend
+- Medicine recommendation module
+- Drug interaction checking
+- Cloud deployment
+- Prescription segmentation
+- Fine-tuning on additional prescription datasets
 
-</div>
+---
+
+## Applications
+
+- Digital prescription management
+- Pharmacy assistance
+- Medical record digitization
+- Healthcare document processing
+- Prescription validation systems
+
+---
+
+## Conclusion
+
+This project demonstrates how Transformer-based OCR and fuzzy matching can be combined to transform handwritten medical prescriptions into structured and understandable information. The system improves medicine recognition reliability through OCR validation and provides a foundation for future healthcare automation applications.
